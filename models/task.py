@@ -40,9 +40,9 @@ class Task:
     def utilization(self) -> float:
         """
         Computes Utilization Factor (only one task) [Section 4.1.1]
-        TODO: Utilization always the worst case scenario?
         """
-        return self.utilization / self.period
+        #TODO: Utilization always the worst case scenario?
+        return self.wcet / self.period
 
     @property
     def has_contrained_deadline(self) -> bool:
