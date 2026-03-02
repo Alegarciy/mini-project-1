@@ -110,12 +110,14 @@ class TaskSet:
         with open(filepath, "r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f, skipinitialspace=True)
             for row in reader:
-                name = row.get("Name", "").strip()
-                if not name:
+                raw = (row.get("Name") or row.get("Task") or row.get("TaskID") or "").strip()
+                if not raw:
                     continue
 
                 # Extract numeric ID from name like "T0", "T1", "T10"
-                task_id = int(name[1:])
+                id_str = raw.lstrip("Tt").lstrip("_").strip()
+                task_id = int(id_str)
+                name = f"T{task_id}"
 
                 tasks.append(Task(
                     id=task_id,
