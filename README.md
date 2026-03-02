@@ -33,3 +33,19 @@ Represents a periodic real-time task from a task set.This tasks will go under th
 is equal to the period. Ti.
 + `A4`: All tasks in . 𝚪 are independent; that is, there are no precedence relations and
 no resource constraints.
+
+### Running Examples
+
+## Models Commands:
+
++ To see how the `task` model work 
+```bash
+python runs/example_task.py
+```
+
++ To see how the `taskset` model work, for analysis run this command. 
+> Note: the examples need to be loaded in the `example` folder
+```bash
+python runs/example_taskset.py --csv taskset-0.csv
+```
+

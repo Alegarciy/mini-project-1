@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from enum import Enum
+# from enum import Enum
 
 # class Utilization(Enum):
 #     wcet = 1
@@ -41,7 +41,7 @@ class Task:
         """
         Computes Utilization Factor (only one task) [Section 4.1.1]
         """
-        #TODO: Utilization always the worst case scenario?
+        # TODO: Utilization always the worst case scenario?
         return self.wcet / self.period
 
     @property

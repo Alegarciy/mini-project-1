@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Iterator
 
 # Custom
-from models.task import Task
+from models.scheduling.task import Task
 
 
 class TaskSet:
