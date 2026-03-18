@@ -32,6 +32,8 @@ class TaskSet:
         Defines the window of repetition between periods
         """
         periods = [t.period for t in self._tasks.values()]
+        print('== PERIODS ==')
+        print(periods)
         return reduce(math.lcm, periods) if periods else 0
 
     # == Methods Generalization for Set ==
@@ -122,7 +124,9 @@ class TaskSet:
                 tasks.append(Task(
                     id=task_id,
                     name=name,
-                    jitter=int(row.get("Jitter", 0)),
+                    # TODO: If we want to load tasks with jitter
+                    # jitter=int(row.get("Jitter", 0)),
+                    jitter=0,
                     bcet=int(row["BCET"]),
                     wcet=int(row["WCET"]),
                     period=int(row["Period"]),

@@ -21,6 +21,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from models.scheduling.taskset import TaskSet
 from simulation.engine import SimulationEngine
 
+from analysis.workload_analyzer import workload
+
 # TODO: Code the analysis
 # from analysis.dm_analysis import (
 #     perform_dm_analysis,
@@ -232,6 +234,10 @@ def main():
 
     # TODO: 4. Full Comparison with analytical
     # run_comparison(taskset, dm_analytical, dm_sim, edf_sim)
+
+    print("=== FAIL ANALYZER ===")
+    workload_analysis = workload(taskset)
+    print(f"{YELLOW}Pass Workload Analysis:{workload_analysis < taskset.tasks[-1].period}{RESET}")
 
     print()
 

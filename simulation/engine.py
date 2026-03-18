@@ -194,8 +194,15 @@ class SimulationEngine:
         # TODO: Double check with the TA if this step is necessary
         # Note: this step is no necessary for the mini-project-01
         jitter_offset = 0.0
+
         if task.jitter > 0:
             jitter_offset = self.rng.uniform(0, task.jitter)
+
+        if task.jitter != 0:
+            print('== ACTUAL RELEASE ==')
+            print('Event Time: ', event.time)
+            print('Jitter Offset: ', jitter_offset)
+
         actual_release = event.time + jitter_offset
 
         # Create τ_{i,j}
