@@ -15,6 +15,7 @@ Run:
 import argparse
 from pathlib import Path
 import sys
+from analysis.response_time_analysis import response_time_analysis
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -136,6 +137,36 @@ def run_simulation(
     return aggregated
 
 
+def print_dm_rta(results: list[dict]):
+    header("ANALYTICAL — DM RESPONSE TIME ANALYSIS")
+
+    print(
+        f"\n {BOLD}{WHITE}{'τ_i':<6} {'R_i':<10} {'D_i':<10} "
+        f"{'schedulable':<12} {'steps':<20}{RESET}"
+    )
+    print(f" {DIM}{'─' * 72}{RESET}")
+
+    for r in results:
+        task = r["task"]
+        ok = r["schedulable"]
+        ok_text = f"{GREEN}yes{RESET}" if ok else f"{RED}no{RESET}"
+        color = CYAN if ok else RED
+        steps_text = " → ".join(str(x) for x in r["steps"])
+
+        print(
+            f" {YELLOW}τ_{task.id:<4}{RESET} "
+            f"{color}{r['response_time']:<10}{RESET} "
+            f"{MAGENTA}{task.deadline:<10}{RESET} "
+            f"{ok_text:<12} "
+            f"{DIM}{steps_text}{RESET}"
+        )
+
+    all_ok = all(r["schedulable"] for r in results)
+    if all_ok and len(results) > 0:
+        print(f"\n {GREEN}✓ Task set schedulable under DM according to RTA{RESET}")
+    else:
+        print(f"\n {RED}✗ Task set NOT schedulable under DM according to RTA{RESET}")
+
 # =========================================================================
 #  START PROGRAM
 # =========================================================================
@@ -189,6 +220,9 @@ def main():
 
     # TODO: 2. Analytical
     # dm_analytical, edf_analytical = run_analytical(taskset)
+
+    dm_rta = response_time_analysis(taskset, "DM")
+    print_dm_rta(dm_rta)
 
     # ── 3. Simulation ──
     mode = "WCET" if args.use_wcet else f"random (seed={args.seed})"
