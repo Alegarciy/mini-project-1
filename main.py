@@ -167,6 +167,27 @@ def print_dm_rta(results: list[dict]):
     else:
         print(f"\n {RED}✗ Task set NOT schedulable under DM according to RTA{RESET}")
 
+def print_edf_analysis(results):
+    header("ANALYTICAL — EDF DEMAND ANALYSIS")
+
+    print(
+        f"\n {BOLD}{WHITE}{'t':<10} {'dbf(t)':<12} {'schedulable':<12}{RESET}"
+    )
+    print(f" {DIM}{'─' * 38}{RESET}")
+
+    for r in results:
+        ok = "yes" if r["schedulable"] else "no"
+        print(
+            f" {YELLOW}{r['t']:<10}{RESET} "
+            f"{CYAN}{r['demand']:<12}{RESET} "
+            f"{ok:<12}"
+        )
+
+    all_ok = all(r["schedulable"] for r in results)
+    print(
+        f"\n {'✓' if all_ok else '✗'} EDF schedulable: {all_ok}"
+    )
+
 # =========================================================================
 #  START PROGRAM
 # =========================================================================
@@ -223,6 +244,9 @@ def main():
 
     dm_rta = response_time_analysis(taskset, "DM")
     print_dm_rta(dm_rta)
+
+    edf_results = response_time_analysis(taskset, "EDF")
+    print_edf_analysis(edf_results)
 
     # ── 3. Simulation ──
     mode = "WCET" if args.use_wcet else f"random (seed={args.seed})"
