@@ -238,7 +238,7 @@ def main():
     print("=== FAIL ANALYZER ===")
     workload_analysis = workload(taskset)
     print(f"{YELLOW}Pass Workload Analysis:{workload_analysis < taskset.tasks[-1].period}{RESET}")
-
+    
     print()
 
 
