@@ -65,6 +65,59 @@ def workload_dm(taskset: TaskSet):
     return result
 
 
+def workload_at_deadline_dm(taskset: TaskSet) -> list[int]:
+    """
+    Compute W_i(D_i) for every task — always evaluates at the deadline,
+    no early exit.  The existing algorithm is untouched; this is additive.
+    """
+    taskset.sorted_by_deadline()
+    tasks: list[Task] = [copy.copy(t) for t in taskset.tasks]
+
+    result = []
+    for i in range(1, len(tasks) + 1):
+        last_task      = tasks[i - 1]
+        previous_tasks = tasks[:i - 1]
+        t              = last_task.deadline
+        interference   = sum(
+            ceil(t / p.period) * p.wcet for p in previous_tasks
+        )
+        result.append(last_task.wcet + interference)
+
+    return result
+
+
+def print_workload_analysis(taskset: TaskSet) -> None:
+    """
+    Print both workload results side by side:
+      - W_i (first pass) : from workload_dm  — earliest t where W ≤ t
+      - W_i (D_i)        : from workload_at_deadline_dm — always at deadline
+    """
+    first_pass   = workload_dm(taskset)
+    at_deadline  = workload_at_deadline_dm(taskset)
+
+    taskset.sorted_by_deadline()
+    tasks = list(taskset.tasks)
+
+    print(f"\n  {_BOLD}{_WHITE}"
+          f"{'τ_i':<6}  {'D_i':<8}  {'W_i (first pass)':<18}  {'W_i (D_i)':<12}  schedulable"
+          f"{_RESET}")
+    print(f"  {_DIM}{'─' * 62}{_RESET}")
+
+    for task, w_fp, w_dl in zip(tasks, first_pass, at_deadline):
+        sched    = w_fp != -1
+        fp_str   = f"{w_fp}" if sched else f"{_RED}FAIL{_RESET}"
+        s_color  = _GREEN if sched else _RED
+        verdict  = f"{s_color}✓{_RESET}" if sched else f"{_RED}✗{_RESET}"
+
+        print(
+            f"  {_YELLOW}τ_{task.id:<4}{_RESET}"
+            f"  {_MAGENTA}{task.deadline:<8}{_RESET}"
+            f"  {_CYAN}{fp_str:<18}{_RESET}"
+            f"  {_BOLD}{w_dl:<12}{_RESET}"
+            f"  {verdict}"
+        )
+
+
 # =========================================================================
 #  LOG-BASED WORKLOAD TRACE
 # =========================================================================

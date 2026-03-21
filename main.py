@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from models.scheduling.taskset import TaskSet
 from simulation.engine import SimulationEngine
 
-from analysis.workload_analyzer import workload
+from analysis.workload_analyzer import workload, print_workload_analysis
 
 # TODO: Code the analysis
 # from analysis.dm_analysis import (
@@ -122,7 +122,7 @@ def _save_logs(engine, algorithm: str, log_dir: Path, timestamp: str, rep_suffix
         writer.writeheader()
         writer.writerows(job_to_row(j) for j in engine.completed_jobs)
 
-    print(f"  {DIM}Logs saved → {log_dir}/{CYAN}{base}{DIM}*.csv{RESET}")
+    pass
 
 
 def run_simulation(
@@ -173,33 +173,6 @@ def run_simulation(
             "total_missed": all_missed[task.id],
         }
 
-    # ── Per-task results table ──
-    print(
-        f"\n  {BOLD}{WHITE}{'τ_i':<6}  {'max R_i':<10}  {'avg R_i':<10}  "
-        f"{'D_i':<10}  {'missed':<8}{RESET}"
-    )
-    print(f"  {DIM}{'─' * 52}{RESET}")
-
-    for tid in sorted(aggregated):
-        a = aggregated[tid]
-        t = taskset.get_task(tid)
-        missed_color = RED if a["total_missed"] > 0 else GREEN
-
-        print(
-            f"  {YELLOW}τ_{tid:<4}{RESET}  "
-            f"{CYAN}{a['max_R_i']:<10.1f}{RESET}  "
-            f"{DIM}{a['avg_R_i']:<10.1f}{RESET}  "
-            f"{MAGENTA}{t.deadline:<10}{RESET}  "
-            f"{missed_color}{a['total_missed']:<8}{RESET}"
-        )
-
-    # ── Summary line ──
-    total_missed = sum(a["total_missed"] for a in aggregated.values())
-    if total_missed == 0:
-        print(f"\n  {GREEN}✓ All deadlines met{RESET}")
-    else:
-        print(f"\n  {RED}✗ {total_missed} total deadline misses{RESET}")
-
     return aggregated
 
 
@@ -233,87 +206,23 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # ── 1. Load Γ ──
-    header(f"LOADING TASK SET — {Path(args.taskset).name}")
-
     taskset = TaskSet.from_csv(args.taskset)
 
-    print(f"  {BOLD}{YELLOW}{taskset}{RESET}")
-    print()
-    label("n                    ", f"{taskset.n}", CYAN)
-    label("U                    ", f"{taskset.utilization:.4f}")
-    label("H                    ", f"{taskset.hyperperiod}", CYAN)
-    label("D_max                ", f"{taskset.D_max}", MAGENTA)
-    label(
-        "Constrained?         ",
-        f"{taskset.has_constrained_deadlines}",
-        RED if taskset.has_constrained_deadlines else GREEN,
-    )
-
-    # ── LL Bound quick check ──
-    n = taskset.n
-    ll_bound = n * (2 ** (1 / n) - 1)
-    label("U_lub (LL bound)     ", f"{ll_bound:.4f}", CYAN)
-
-    if taskset.utilization <= ll_bound:
-        print(f"\n  {GREEN}✓ U ≤ U_lub → guaranteed schedulable by RM/DM{RESET}")
-    elif taskset.utilization <= 1.0:
-        print(f"\n  {YELLOW}? U_lub < U ≤ 1.0 → inconclusive, need RTA/dbf{RESET}")
-    else:
-        print(f"\n  {RED}✗ U > 1.0 → overloaded, no algorithm can schedule{RESET}")
-
-    # TODO: 2. Analytical
-    # dm_analytical, edf_analytical = run_analytical(taskset)
-
-    # ── 3. Simulation ──
+    # ── 2. Simulation ──
     mode = "WCET" if args.use_wcet else f"random (seed={args.seed})"
 
-    header(f"SIMULATION — DM ({mode})")
-    dm_sim = run_simulation(
+    run_simulation(
         taskset, "DM", args.replications, args.seed, args.use_wcet,
         log_dir=args.log_dir, timestamp=timestamp,
     )
-
-    header(f"SIMULATION — EDF ({mode})")
-    edf_sim = run_simulation(
+    run_simulation(
         taskset, "EDF", args.replications, args.seed, args.use_wcet,
         log_dir=args.log_dir, timestamp=timestamp,
     )
 
-    # ── 4. Quick Comparison ──
-    header("COMPARISON — DM vs EDF (max R_i)")
-
-    print(
-        f"\n  {BOLD}{WHITE}{'τ_i':<6}  {'DM R_i':<10}  {'EDF R_i':<10}  "
-        f"{'D_i':<10}  {'winner':<8}{RESET}"
-    )
-    print(f"  {DIM}{'─' * 52}{RESET}")
-
-    for tid in sorted(dm_sim):
-        t = taskset.get_task(tid)
-        dm_r = dm_sim[tid]["max_R_i"]
-        edf_r = edf_sim[tid]["max_R_i"]
-
-        if dm_r < edf_r:
-            winner = f"{CYAN}DM{RESET}"
-        elif edf_r < dm_r:
-            winner = f"{MAGENTA}EDF{RESET}"
-        else:
-            winner = f"{DIM}tie{RESET}"
-
-        print(
-            f"  {YELLOW}τ_{tid:<4}{RESET}  "
-            f"{CYAN}{dm_r:<10.1f}{RESET}  "
-            f"{MAGENTA}{edf_r:<10.1f}{RESET}  "
-            f"{DIM}{t.deadline:<10}{RESET}  "
-            f"{winner}"
-        )
-
-    # TODO: 4. Full Comparison with analytical
-    # run_comparison(taskset, dm_analytical, dm_sim, edf_sim)
-
-    print("=== FAIL ANALYZER ===")
-    workload_analysis = workload(taskset)
-    print(YELLOW,workload_analysis,RESET)
+    # ── 3. Workload Analysis ──
+    header("WORKLOAD ANALYSIS — DM")
+    print_workload_analysis(taskset)
 
     print()
 
