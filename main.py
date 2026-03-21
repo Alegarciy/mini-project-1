@@ -13,7 +13,11 @@ Run:
 """
 
 import argparse
+import csv
+from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
+from typing import Optional
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -66,12 +70,69 @@ def label(name, value, color=GREEN):
 # =========================================================================
 
 
+def _save_logs(engine, algorithm: str, log_dir: Path, timestamp: str, rep_suffix: str):
+    """
+    Write the four simulation logs to log_dir as CSV files.
+    Filenames: {log_type}_{algorithm}_{timestamp}{rep_suffix}.csv
+
+    @Author: Claude Generated
+    """
+    log_dir.mkdir(parents=True, exist_ok=True)
+    base = f"{algorithm}_{timestamp}{rep_suffix}"
+
+    JOB_FIELDS = [
+        "task_id", "job_id", "release_time", "absolute_deadline",
+        "execution_time", "remaining_time", "start_time", "finish_time",
+        "preemtion_count", "response_time", "missed_deadline", "is_completed",
+    ]
+
+    def job_to_row(job):
+        d = asdict(job)
+        d["response_time"] = job.response_time
+        d["missed_deadline"] = job.missed_deadline
+        d["is_completed"] = job.is_completed
+        return d
+
+    # schedule_trace
+    with open(log_dir / f"schedule_trace_{base}.csv", "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["start", "end", "task_id"])
+        writer.writeheader()
+        writer.writerows({"start": s, "end": e, "task_id": tid} for s, e, tid in engine.schedule_trace)
+
+    # preemption_log — flatten preempted/by job fields with a prefix
+    preemption_fields = ["time"] + [f"preempted_{k}" for k in JOB_FIELDS] + [f"by_{k}" for k in JOB_FIELDS]
+    with open(log_dir / f"preemption_log_{base}.csv", "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=preemption_fields)
+        writer.writeheader()
+        for t, pj, bj in engine.preemption_log:
+            row = {"time": t}
+            row.update({f"preempted_{k}": v for k, v in job_to_row(pj).items()})
+            row.update({f"by_{k}": v for k, v in job_to_row(bj).items()})
+            writer.writerow(row)
+
+    # all_jobs
+    with open(log_dir / f"all_jobs_{base}.csv", "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=JOB_FIELDS)
+        writer.writeheader()
+        writer.writerows(job_to_row(j) for j in engine.all_jobs)
+
+    # completed_jobs
+    with open(log_dir / f"completed_jobs_{base}.csv", "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=JOB_FIELDS)
+        writer.writeheader()
+        writer.writerows(job_to_row(j) for j in engine.completed_jobs)
+
+    print(f"  {DIM}Logs saved → {log_dir}/{CYAN}{base}{DIM}*.csv{RESET}")
+
+
 def run_simulation(
     taskset: TaskSet,
     algorithm: str,
     num_replication: int = 1,
     seed: int = 14,
     use_wcet: bool = False,
+    log_dir: Optional[Path] = None,
+    timestamp: str = "",
 ) -> dict:
     """
     Run simulation for a given algorithm with optional replications.
@@ -93,6 +154,10 @@ def run_simulation(
         )
         engine.run()
         stats = engine.get_statistics()
+
+        if log_dir is not None:
+            rep_suffix = f"_rep{rep + 1}" if num_replication > 1 else ""
+            _save_logs(engine, algorithm, log_dir, timestamp, rep_suffix)
 
         for tid, s in stats.items():
             all_R_i[tid].append(s["R_i"])
@@ -158,7 +223,14 @@ def main():
         action="store_true",
         help="Always use WCET (no randomness, for validation)",
     )
+    parser.add_argument(
+        "--log-dir",
+        type=Path,
+        default=None,
+        help="Directory to store simulation logs (schedule_trace, preemption_log, all_jobs, completed_jobs)",
+    )
     args = parser.parse_args()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # ── 1. Load Γ ──
     header(f"LOADING TASK SET — {Path(args.taskset).name}")
@@ -196,11 +268,15 @@ def main():
     mode = "WCET" if args.use_wcet else f"random (seed={args.seed})"
 
     header(f"SIMULATION — DM ({mode})")
-    dm_sim = run_simulation(taskset, "DM", args.replications, args.seed, args.use_wcet)
+    dm_sim = run_simulation(
+        taskset, "DM", args.replications, args.seed, args.use_wcet,
+        log_dir=args.log_dir, timestamp=timestamp,
+    )
 
     header(f"SIMULATION — EDF ({mode})")
     edf_sim = run_simulation(
-        taskset, "EDF", args.replications, args.seed, args.use_wcet
+        taskset, "EDF", args.replications, args.seed, args.use_wcet,
+        log_dir=args.log_dir, timestamp=timestamp,
     )
 
     # ── 4. Quick Comparison ──
@@ -237,7 +313,7 @@ def main():
 
     print("=== FAIL ANALYZER ===")
     workload_analysis = workload(taskset)
-    print(f"{YELLOW}Pass Workload Analysis:{workload_analysis < taskset.tasks[-1].period}{RESET}")
+    print(YELLOW,workload_analysis,RESET)
 
     print()
 
