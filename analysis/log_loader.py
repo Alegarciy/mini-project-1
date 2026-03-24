@@ -18,79 +18,74 @@ Example usage:
 @Author: Claude Generated
 """
 
-import csv
 from pathlib import Path
+
+import pandas as pd
 
 from models.scheduling.task import Task
 from models.scheduling.taskset import TaskSet
 
 
-# ── Field type coercions ──────────────────────────────────────────────────────
-# CSV stores everything as strings; these helpers restore the original types.
+_JOB_FIELDS = [
+    "task_id", "job_id", "release_time", "absolute_deadline",
+    "execution_time", "remaining_time", "start_time", "finish_time",
+    "preemtion_count", "response_time", "missed_deadline", "is_completed",
+]
 
-def _to_float_or_none(val: str):
-    return None if val == "" or val == "None" else float(val)
-
-
-def _to_int(val: str) -> int:
-    return int(float(val))
-
-
-def _to_bool(val: str) -> bool:
-    return val.strip().lower() == "true"
+# These fields are legitimately absent (None) before a job starts/finishes
+_NULLABLE = {"start_time", "finish_time", "response_time"}
 
 
-def _cast_job_row(row: dict) -> dict:
-    return {
-        "task_id":           _to_int(row["task_id"]),
-        "job_id":            _to_int(row["job_id"]),
-        "release_time":      float(row["release_time"]),
-        "absolute_deadline": float(row["absolute_deadline"]),
-        "execution_time":    float(row["execution_time"]),
-        "remaining_time":    float(row["remaining_time"]),
-        "start_time":        _to_float_or_none(row["start_time"]),
-        "finish_time":       _to_float_or_none(row["finish_time"]),
-        "preemtion_count":   _to_int(row["preemtion_count"]),
-        "response_time":     _to_float_or_none(row["response_time"]),
-        "missed_deadline":   _to_bool(row["missed_deadline"]),
-        "is_completed":      _to_bool(row["is_completed"]),
-    }
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _jobs_df_to_records(df: pd.DataFrame) -> list[dict]:
+    """Convert a job DataFrame to list-of-dicts, preserving None for nullable fields."""
+    for col in ("task_id", "job_id", "preemtion_count"):
+        df[col] = df[col].astype(int)
+    records = df.to_dict("records")
+    for row in records:
+        for k in _NULLABLE:
+            if pd.isna(row[k]):
+                row[k] = None
+    return records
+
+
+def _parse_job_cols(row: pd.Series, prefix: str) -> dict:
+    """Extract and type-cast a prefixed job block from a preemption-log row."""
+    d = {k: row[f"{prefix}{k}"] for k in _JOB_FIELDS}
+    for col in ("task_id", "job_id", "preemtion_count"):
+        d[col] = int(d[col])
+    for k in _NULLABLE:
+        if pd.isna(d[k]):
+            d[k] = None
+    d["missed_deadline"] = bool(d["missed_deadline"])
+    d["is_completed"] = bool(d["is_completed"])
+    return d
 
 
 # ── Loaders ───────────────────────────────────────────────────────────────────
 
 def _load_schedule_trace(path: Path) -> list[dict]:
-    with open(path, newline="") as f:
-        return [
-            {
-                "start":   float(row["start"]),
-                "end":     float(row["end"]),
-                "task_id": _to_int(row["task_id"]),
-            }
-            for row in csv.DictReader(f)
-        ]
+    df = pd.read_csv(path)
+    df["task_id"] = df["task_id"].astype(int)
+    return df.to_dict("records")
 
 
 def _load_preemption_log(path: Path) -> list[dict]:
-    JOB_FIELDS = [
-        "task_id", "job_id", "release_time", "absolute_deadline",
-        "execution_time", "remaining_time", "start_time", "finish_time",
-        "preemtion_count", "response_time", "missed_deadline", "is_completed",
+    df = pd.read_csv(path, true_values=["True"], false_values=["False"])
+    return [
+        {
+            "time":      row["time"],
+            "preempted": _parse_job_cols(row, "preempted_"),
+            "by":        _parse_job_cols(row, "by_"),
+        }
+        for _, row in df.iterrows()
     ]
-    with open(path, newline="") as f:
-        rows = []
-        for row in csv.DictReader(f):
-            rows.append({
-                "time":      float(row["time"]),
-                "preempted": _cast_job_row({k: row[f"preempted_{k}"] for k in JOB_FIELDS}),
-                "by":        _cast_job_row({k: row[f"by_{k}"] for k in JOB_FIELDS}),
-            })
-        return rows
 
 
 def _load_jobs(path: Path) -> list[dict]:
-    with open(path, newline="") as f:
-        return [_cast_job_row(row) for row in csv.DictReader(f)]
+    df = pd.read_csv(path, true_values=["True"], false_values=["False"])
+    return _jobs_df_to_records(df)
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -138,21 +133,15 @@ def taskset_from_logs(logs: dict) -> TaskSet:
 
     @Author: Claude Generated
     """
-    from collections import defaultdict
-
-    by_task: dict[int, list[dict]] = defaultdict(list)
-    for job in logs["all_jobs"]:
-        by_task[job["task_id"]].append(job)
+    df = pd.DataFrame(logs["all_jobs"])
 
     tasks = []
-    for tid, jobs in sorted(by_task.items()):
-        jobs_sorted = sorted(jobs, key=lambda j: j["job_id"])
-
-        D_i  = int(jobs_sorted[0]["absolute_deadline"])
-        T_i  = int(jobs_sorted[1]["release_time"]) if len(jobs_sorted) > 1 else D_i
-        wcet = int(max(j["execution_time"] for j in jobs_sorted))
-        bcet = int(min(j["execution_time"] for j in jobs_sorted))
-
+    for tid, group in df.groupby("task_id"):
+        group_sorted = group.sort_values("job_id")
+        D_i  = int(group_sorted.iloc[0]["absolute_deadline"])
+        T_i  = int(group_sorted.iloc[1]["release_time"]) if len(group_sorted) > 1 else D_i
+        wcet = int(group["execution_time"].max())
+        bcet = int(group["execution_time"].min())
         tasks.append(Task(id=tid, name=f"tau_{tid}", bcet=bcet, wcet=wcet,
                           period=T_i, deadline=D_i))
 

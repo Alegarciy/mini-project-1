@@ -13,12 +13,13 @@ Run:
 """
 
 import argparse
-import csv
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 import sys
+
+import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -94,35 +95,26 @@ def _save_logs(engine, algorithm: str, log_dir: Path, timestamp: str, rep_suffix
         return d
 
     # schedule_trace
-    with open(log_dir / f"schedule_trace_{base}.csv", "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["start", "end", "task_id"])
-        writer.writeheader()
-        writer.writerows({"start": s, "end": e, "task_id": tid} for s, e, tid in engine.schedule_trace)
+    pd.DataFrame(
+        [{"start": s, "end": e, "task_id": tid} for s, e, tid in engine.schedule_trace]
+    ).to_csv(log_dir / f"schedule_trace_{base}.csv", index=False)
 
     # preemption_log — flatten preempted/by job fields with a prefix
-    preemption_fields = ["time"] + [f"preempted_{k}" for k in JOB_FIELDS] + [f"by_{k}" for k in JOB_FIELDS]
-    with open(log_dir / f"preemption_log_{base}.csv", "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=preemption_fields)
-        writer.writeheader()
-        for t, pj, bj in engine.preemption_log:
-            row = {"time": t}
-            row.update({f"preempted_{k}": v for k, v in job_to_row(pj).items()})
-            row.update({f"by_{k}": v for k, v in job_to_row(bj).items()})
-            writer.writerow(row)
+    preemption_rows = []
+    for t, pj, bj in engine.preemption_log:
+        row = {"time": t}
+        row.update({f"preempted_{k}": v for k, v in job_to_row(pj).items()})
+        row.update({f"by_{k}": v for k, v in job_to_row(bj).items()})
+        preemption_rows.append(row)
+    pd.DataFrame(preemption_rows).to_csv(log_dir / f"preemption_log_{base}.csv", index=False)
 
-    # all_jobs
-    with open(log_dir / f"all_jobs_{base}.csv", "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=JOB_FIELDS)
-        writer.writeheader()
-        writer.writerows(job_to_row(j) for j in engine.all_jobs)
-
-    # completed_jobs
-    with open(log_dir / f"completed_jobs_{base}.csv", "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=JOB_FIELDS)
-        writer.writeheader()
-        writer.writerows(job_to_row(j) for j in engine.completed_jobs)
-
-    pass
+    # all_jobs / completed_jobs
+    pd.DataFrame([job_to_row(j) for j in engine.all_jobs])[JOB_FIELDS].to_csv(
+        log_dir / f"all_jobs_{base}.csv", index=False
+    )
+    pd.DataFrame([job_to_row(j) for j in engine.completed_jobs])[JOB_FIELDS].to_csv(
+        log_dir / f"completed_jobs_{base}.csv", index=False
+    )
 
 
 def run_simulation(

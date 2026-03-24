@@ -14,6 +14,7 @@ import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from analysis.log_loader import load_logs
 
@@ -31,16 +32,17 @@ def _latest_timestamp(log_dir: Path, algorithm: str) -> str:
 
 
 def plot_response_times(logs: dict, algorithm: str, timestamp: str):
-    jobs = [j for j in logs["all_jobs"] if j["response_time"] is not None]
-
-    by_task: dict[int, list[float]] = {}
-    for j in jobs:
-        by_task.setdefault(j["task_id"], []).append(j["response_time"])
-
-    task_ids = sorted(by_task)
-    avg_rt = [sum(by_task[t]) / len(by_task[t]) for t in task_ids]
-    max_rt = [max(by_task[t]) for t in task_ids]
-    labels = [f"τ_{t}" for t in task_ids]
+    df = pd.DataFrame(logs["all_jobs"]).dropna(subset=["response_time"])
+    stats = (
+        df.groupby("task_id")["response_time"]
+        .agg(avg_rt="mean", max_rt="max")
+        .reset_index()
+        .sort_values("task_id")
+    )
+    task_ids = stats["task_id"].tolist()
+    avg_rt   = stats["avg_rt"].tolist()
+    max_rt   = stats["max_rt"].tolist()
+    labels   = [f"τ_{t}" for t in task_ids]
 
     x = range(len(task_ids))
     fig, ax = plt.subplots(figsize=(10, 5))

@@ -1,4 +1,4 @@
-from collections import defaultdict
+import pandas as pd
 
 from analysis.log_loader import load_logs, taskset_from_logs
 
@@ -24,18 +24,14 @@ def label(name, value, color=GREEN):
 
 
 def compute_stats(logs: dict) -> dict:
-    by_task = defaultdict(list)
-    for job in logs["all_jobs"]:
-        by_task[job["task_id"]].append(job)
-
+    df = pd.DataFrame(logs["all_jobs"])
     stats = {}
-    for tid, jobs in by_task.items():
-        rts    = [j["response_time"] for j in jobs if j["response_time"] is not None]
-        missed = sum(1 for j in jobs if j["missed_deadline"])
+    for tid, group in df.groupby("task_id"):
+        rts = group["response_time"].dropna()
         stats[tid] = {
-            "max_R_i":      max(rts) if rts else 0.0,
-            "avg_R_i":      sum(rts) / len(rts) if rts else 0.0,
-            "total_missed": missed,
+            "max_R_i":      rts.max() if len(rts) else 0.0,
+            "avg_R_i":      rts.mean() if len(rts) else 0.0,
+            "total_missed": int(group["missed_deadline"].sum()),
         }
     return stats
 
