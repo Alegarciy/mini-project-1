@@ -221,9 +221,11 @@ def main():
     )
 
     # ── 3. Workload Analysis ──
+    header("WORKLOAD ANALYSIS — EDF")
+    workload(taskset, "EDF")
     header("WORKLOAD ANALYSIS — DM")
+    workload(taskset)
     print_workload_analysis(taskset)
-
     print()
 
 

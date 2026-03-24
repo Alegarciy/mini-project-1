@@ -1,0 +1,121 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" version="29.6.4">
+  <diagram name="RT Scheduler – UML" id="rt-sched-uml">
+    <mxGraphModel dx="2078" dy="2276" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1150" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bg_sched" parent="1" style="rounded=0;whiteSpace=wrap;html=1;                  fillColor=#e8f1fb;strokeColor=#6c8ebf;strokeWidth=1;dashed=1;                  verticalAlign=top;align=left;spacingTop=5;spacingLeft=8;                  fontSize=11;fontStyle=3;fontColor=#6c8ebf;" value="models / scheduling" vertex="1">
+          <mxGeometry height="590" width="1120" x="20" y="-40" as="geometry" />
+        </mxCell>
+        <mxCell id="bg_sim" parent="1" style="rounded=0;whiteSpace=wrap;html=1;                  fillColor=#f0faf0;strokeColor=#82b366;strokeWidth=1;dashed=1;                  verticalAlign=top;align=right;spacingTop=5;spacingLeft=8;                  fontSize=11;fontStyle=3;fontColor=#82b366;spacingRight=9;" value="models / simulation" vertex="1">
+          <mxGeometry height="335" width="340" x="810" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="bg_eng" parent="1" style="rounded=0;whiteSpace=wrap;html=1;                  fillColor=#fff8ed;strokeColor=#d6b656;strokeWidth=1;dashed=1;                  verticalAlign=top;align=left;spacingTop=5;spacingLeft=8;                  fontSize=11;fontStyle=3;fontColor=#d6b656;" value="simulation / engine" vertex="1">
+          <mxGeometry height="525" width="740" x="20" y="575" as="geometry" />
+        </mxCell>
+        <mxCell id="c_task" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;                  fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" value="Task" vertex="1">
+          <mxGeometry height="290" width="270" x="510" y="-20" as="geometry" />
+        </mxCell>
+        <mxCell id="c_task_a" parent="c_task" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ id : int&#xa;+ name : str&#xa;+ bcet : int&#xa;+ wcet : int&#xa;+ period : int&#xa;+ deadline : int&#xa;+ phase : int&#xa;+ jitter : int" vertex="1">
+          <mxGeometry height="162" width="270" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c_task_d" parent="c_task" style="line;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="8" width="270" y="192" as="geometry" />
+        </mxCell>
+        <mxCell id="c_task_m" parent="c_task" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ utilization() : float&#xa;+ has_constrained_deadline() : bool&#xa;+ release_time(k: int) : float&#xa;+ absolute_deadline_of(k: int) : float" vertex="1">
+          <mxGeometry height="90" width="270" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-9" edge="1" parent="1" source="c_job" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;dashed=1;" target="c_task_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c_job" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;                  fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" value="Job" vertex="1">
+          <mxGeometry height="295" width="270" x="190" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="c_job_a" parent="c_job" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ task_id : int&#xa;+ job_id : int&#xa;+ release_time : float&#xa;+ absolute_deadline : float&#xa;+ execution_time : float&#xa;+ remaining_time : float&#xa;+ start_time : float&#xa;+ finish_time : float&#xa;+ preemtion_count : int" vertex="1">
+          <mxGeometry height="182" width="270" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c_job_d" parent="c_job" style="line;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="8" width="270" y="212" as="geometry" />
+        </mxCell>
+        <mxCell id="c_job_m" parent="c_job" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ response_time() : float&#xa;+ is_completed() : bool&#xa;+ missed_deadline() : bool" vertex="1">
+          <mxGeometry height="75" width="270" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-1" edge="1" parent="1" source="c_tset" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;startArrow=diamondThin;startFill=1;startSize=13;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" target="c_task_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-2" connectable="0" parent="YV8dKkcXkLsu2_kCSZ9r-1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.9465" y="2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-7" edge="1" parent="1" source="c_tset" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;startArrow=open;startFill=0;dashed=1;" target="c_se">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-8" connectable="0" parent="YV8dKkcXkLsu2_kCSZ9r-7" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Use" vertex="1">
+          <mxGeometry relative="1" x="-0.3437" y="3" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c_tset" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;                  fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" value="TaskSet" vertex="1">
+          <mxGeometry height="300" width="290" x="810" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="c_tset_a" parent="c_tset" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="- _tasks : dict[int, Task]&#xa;+ n() : int&#xa;+ utilization() : float&#xa;+ hyperperiod() : int&#xa;+ has_constrained_deadlines() : bool&#xa;+ D_max() : int&#xa;+ tasks() : list[Task]" vertex="1">
+          <mxGeometry height="142" width="290" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c_tset_d" parent="c_tset" style="line;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="8" width="290" y="172" as="geometry" />
+        </mxCell>
+        <mxCell id="c_tset_m" parent="c_tset" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ get_task(id: int) : Task&#xa;+ sorted_by_deadline() : list[Task]&#xa;+ sorted_by_period() : list[Task]&#xa;$ from_csv(filepath) : TaskSet" vertex="1">
+          <mxGeometry height="95" width="290" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="c_etype" parent="1" style="swimlane;fontStyle=0;align=center;startSize=46;html=1;                  fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" value="&lt;i&gt;«enumeration»&lt;/i&gt;&lt;br&gt;&lt;b&gt;EventType&lt;/b&gt;" vertex="1">
+          <mxGeometry height="115" width="230" x="855" y="915" as="geometry" />
+        </mxCell>
+        <mxCell id="c_etype_a" parent="c_etype" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="COMPLETION = 0&#xa;ARRIVAL     = 1&#xa;DEADLINE    = 2" vertex="1">
+          <mxGeometry height="69" width="230" y="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c_event" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;                  fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" value="Event" vertex="1">
+          <mxGeometry height="115" width="260" x="840" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="c_event_a" parent="c_event" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ time : float&#xa;+ event_type : EventType&#xa;+ task_id : int&#xa;+ job_id : int" vertex="1">
+          <mxGeometry height="85" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-5" edge="1" parent="1" source="c_ps" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="c_job_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-6" edge="1" parent="1" source="c_ps" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.75;entryDx=0;entryDy=0;endArrow=diamondThin;endFill=1;startArrow=open;startFill=0;startSize=6;sourcePerimeterSpacing=0;endSize=13;" target="c_se_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c_ps" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;                  fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=13;" value="ProcessorState" vertex="1">
+          <mxGeometry height="100" width="265" x="30" y="727" as="geometry" />
+        </mxCell>
+        <mxCell id="c_ps_a" parent="c_ps" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ clock : float&#xa;+ running_job : Job&#xa;+ running_since : float" vertex="1">
+          <mxGeometry height="70" width="265" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-3" edge="1" parent="1" source="c_se" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;startArrow=diamondThin;startFill=0;startSize=14;" target="c_event_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YV8dKkcXkLsu2_kCSZ9r-4" connectable="0" parent="YV8dKkcXkLsu2_kCSZ9r-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="-0.4638" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c_se" parent="1" style="swimlane;fontStyle=1;align=center;startSize=30;                  fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=13;" value="SimulationEngine" vertex="1">
+          <mxGeometry height="460" width="370" x="365" y="595" as="geometry" />
+        </mxCell>
+        <mxCell id="c_se_a" parent="c_se" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ taskset : TaskSet&#xa;+ algorithm : str&#xa;+ use_wcet : bool&#xa;+ state : ProcessorState&#xa;+ event_queue : list[Event]&#xa;+ ready_queue : list[Job]&#xa;+ completed_jobs : list[Job]&#xa;+ all_jobs : list[Job]&#xa;+ schedule_trace : list[tuple]&#xa;+ preemption_log : list[tuple]" vertex="1">
+          <mxGeometry height="202" width="370" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c_se_d" parent="c_se" style="line;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="8" width="370" y="232" as="geometry" />
+        </mxCell>
+        <mxCell id="c_se_m" parent="c_se" style="text;strokeColor=none;fillColor=none;                  align=left;verticalAlign=top;spacingLeft=6;" value="+ run(duration: float) : list[Job]&#xa;+ get_statistics() : dict&#xa;- _handle_arrival(event, duration)&#xa;- _handle_completion(event)&#xa;- _handle_deadline(event)&#xa;- _schedule(current_time: float)&#xa;- _pick_highest_priority() : Job&#xa;- _pause_running_job()&#xa;- _find_job(task_id, job_id) : Job" vertex="1">
+          <mxGeometry height="220" width="370" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="r_event_etype" edge="1" parent="1" source="c_event" style="edgeStyle=orthogonalEdgeStyle;                  endArrow=open;endFill=0;strokeColor=#82b366;                  exitX=0;exitY=0.5;exitDx=0;exitDy=0;                  entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="c_etype" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
