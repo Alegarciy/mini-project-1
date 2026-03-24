@@ -7,7 +7,7 @@ from models.scheduling.taskset import TaskSet
 from models.scheduling.task import Task
 
 
-def workload(taskset: TaskSet, schedule_type="EDF"):
+def workload(taskset: TaskSet, schedule_type="DM"):
 
     if schedule_type == "DM":
         return 0
@@ -34,13 +34,13 @@ def calculate_dbf(taskset, t: int):
 
 def workload_EDF_helper(taskset):
     points = set()
-    max_t = lcm(*(task.period for task in taskset.tasks))
-    # max_t = sum(task.period for task in taskset.tasks)
+    #max_t = lcm(*(task.period for task in taskset.tasks))
+    max_t = sum(task.period for task in taskset.tasks)
 
     for task in taskset.tasks:
-        k = 1
+        k = 0
         while True:
-            t = k * task.period + task.deadline
+            t = k * task.period + task.deadline 
 
             if t > max_t:
                 break
@@ -52,31 +52,29 @@ def workload_EDF_helper(taskset):
 
     return sorted(points)
 
+def edfGraph(taskset):
+    points = workload_EDF_helper(taskset)
+    graph = []
+
+    for t in points:
+        demand = calculate_dbf(taskset, t)
+        graph.append((t, demand))  
+        print(t, demand)
+
+    return graph
+
 def workload_edf(taskset):
-
-    test_points = workload_EDF_helper(taskset)
-
     print("EDF Demand Bound Function Analysis:")
-    print("----------------------------------")
-
     is_schedulable = True
 
-    for t in test_points:
+    for t in workload_EDF_helper(taskset):
         demand = calculate_dbf(taskset, t)
+        accepted = demand <= t
+        print(f"t = {t} | dbf(t) = {demand} | {'ACCEPTED' if accepted else 'FAILED'}")
+        is_schedulable &= accepted
 
-        # Result for each t
-        print(f"t = {t:4d} | dbf(t) = {demand:4d} | ", end="")
-
-        if demand <= t:
-            print("OK")
-        else:
-            print("FAIL")
-            is_schedulable = False
-
-    if is_schedulable:
-        print("Task set is schedulable under EDF")
-    else:
-        print("Task set is NOT schedulable under EDF")
+    print("Taskset is schedulable under EDF" if is_schedulable
+        else "Taskset is NOT schedulable under EDF")
 
     return is_schedulable
 
