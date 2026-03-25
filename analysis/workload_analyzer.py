@@ -1,31 +1,22 @@
 import copy
 from math import ceil
 from math import floor
-from math import lcm
 
 from models.scheduling.taskset import TaskSet
 from models.scheduling.task import Task
-
-# ── ANSI ─────────────────────────────────────────────────────────────────────
-_BOLD   = "\033[1m"
-_DIM    = "\033[2m"
-_RESET  = "\033[0m"
-_CYAN   = "\033[36m"
-_GREEN  = "\033[32m"
-_YELLOW = "\033[33m"
-_RED    = "\033[31m"
-_MAGENTA= "\033[35m"
-_WHITE  = "\033[37m"
 
 
 def workload(taskset: TaskSet, schedule_type="DM"):
     if schedule_type == "DM":
         return workload_dm(taskset)
-    else:  # EDF
-        workload_edf(taskset)
-        # taskset.sorted_by_period()
-        return 0
-    
+    else:
+        return workload_edf(taskset)
+
+
+# =============================================================================
+#  EDF — Demand Bound Function
+# =============================================================================
+
 def calculate_dbf(taskset, t: int):
     total = 0
 
@@ -35,21 +26,21 @@ def calculate_dbf(taskset, t: int):
         D = task.deadline
 
         jobs = floor((t + T - D) / T)
-        jobs = max(0, jobs) 
+        jobs = max(0, jobs)
 
         total += jobs * C
 
     return total
 
+
 def workload_EDF_helper(taskset):
     points = set()
-    #max_t = lcm(*(task.period for task in taskset.tasks))
     max_t = sum(task.period for task in taskset.tasks)
 
     for task in taskset.tasks:
         k = 0
         while True:
-            t = k * task.period + task.deadline 
+            t = k * task.period + task.deadline
 
             if t > max_t:
                 break
@@ -61,16 +52,6 @@ def workload_EDF_helper(taskset):
 
     return sorted(points)
 
-def edfGraph(taskset):
-    points = workload_EDF_helper(taskset)
-    graph = []
-
-    for t in points:
-        demand = calculate_dbf(taskset, t)
-        graph.append((t, demand))  
-        print(t, demand)
-
-    return graph
 
 def workload_edf(taskset):
     print("EDF Demand Bound Function Analysis:")
@@ -88,8 +69,11 @@ def workload_edf(taskset):
     return is_schedulable
 
 
+# =============================================================================
+#  DM — Workload Function
+# =============================================================================
+
 def workload_dm_helper(tasks: list[Task]):
-    # self._tasks: dict[int, Task] = {t.id: copy.copy(t) for t in tasks}
     last_task = tasks[-1]
     previous_tasks = tasks[:-1]
 
@@ -150,42 +134,9 @@ def workload_at_deadline_dm(taskset: TaskSet) -> list[int]:
     return result
 
 
-def print_workload_analysis(taskset: TaskSet) -> None:
-    """
-    Print both workload results side by side:
-      - W_i (first pass) : from workload_dm  — earliest t where W ≤ t
-      - W_i (D_i)        : from workload_at_deadline_dm — always at deadline
-    """
-    first_pass   = workload_dm(taskset)
-    at_deadline  = workload_at_deadline_dm(taskset)
-
-    taskset.sorted_by_deadline()
-    tasks = list(taskset.tasks)
-
-    print(f"\n  {_BOLD}{_WHITE}"
-          f"{'τ_i':<6}  {'D_i':<8}  {'W_i (first pass)':<18}  {'W_i (D_i)':<12}  schedulable"
-          f"{_RESET}")
-    print(f"  {_DIM}{'─' * 62}{_RESET}")
-
-    for task, w_fp, w_dl in zip(tasks, first_pass, at_deadline):
-        sched    = w_fp != -1
-        fp_str   = f"{w_fp}" if sched else f"{_RED}FAIL{_RESET}"
-        s_color  = _GREEN if sched else _RED
-        verdict  = f"{s_color}✓{_RESET}" if sched else f"{_RED}✗{_RESET}"
-
-        print(
-            f"  {_YELLOW}τ_{task.id:<4}{_RESET}"
-            f"  {_MAGENTA}{task.deadline:<8}{_RESET}"
-            f"  {_CYAN}{fp_str:<18}{_RESET}"
-            f"  {_BOLD}{w_dl:<12}{_RESET}"
-            f"  {verdict}"
-        )
-
-
-# =========================================================================
+# =============================================================================
 #  LOG-BASED WORKLOAD TRACE
-# =========================================================================
-
+# =============================================================================
 
 def workload_trace_from_logs(logs: dict, taskset: TaskSet, task_id: int) -> dict:
     """
@@ -249,64 +200,3 @@ def workload_trace_from_logs(logs: dict, taskset: TaskSet, task_id: int) -> dict
     }
 
 
-def print_workload_trace(logs: dict, taskset: TaskSet, task_id: int) -> None:
-    """
-    Print a colour-coded step-through table of W_i(t) built from simulation
-    logs.  Mirrors the DM analytical workload formula (Eq. 4.31) visually.
-    """
-    data = workload_trace_from_logs(logs, taskset, task_id)
-    rows       = data["rows"]
-    W_final    = data["W_final"]
-    D_i        = data["D_i"]
-    C_i        = data["C_i"]
-    slack      = data["slack"]
-    higher_ids = data["higher_ids"]
-
-    target = taskset.get_task(task_id)
-    hp_names = ", ".join(f"τ_{hid}" for hid in sorted(higher_ids)) or "none"
-
-    print(f"\n{_BOLD}{_WHITE}Workload Trace — τ_{task_id}  "
-          f"(D_i = {D_i}, C_i = {C_i}){_RESET}")
-    print(f"  {_DIM}Higher-priority tasks under DM: {hp_names}{_RESET}")
-    print(f"  {_DIM}Showing schedule up to t = {D_i}{_RESET}\n")
-
-    # ── header ──
-    H = f"{'t_start':>8}  {'t_end':>6}  {'τ':>5}  {'Δt':>5}  {'W_i(t)':>8}  note"
-    print(f"  {_BOLD}{_WHITE}{H}{_RESET}")
-    print(f"  {_DIM}{'─' * 55}{_RESET}")
-
-    for r in rows:
-        tid   = r["task_id"]
-        start = r["start"]
-        end   = r["end"]
-        delta = r["delta"]
-        w_val = r["w"]
-
-        if r["is_target"]:
-            color = _CYAN
-            note  = f"{_DIM}← C_i{_RESET}"
-        elif r["is_higher"]:
-            color = _YELLOW
-            note  = f"{_DIM}← higher priority{_RESET}"
-        else:
-            color = _DIM
-            note  = f"{_DIM}(lower priority, excluded){_RESET}"
-
-        w_str = f"{w_val:>8.1f}" if w_val is not None else f"{'—':>8}"
-
-        print(
-            f"  {color}{start:>8.1f}  {end:>6.1f}  "
-            f"τ_{tid:<3}  {delta:>5.1f}  "
-            f"{_RESET}{_BOLD}{w_str}{_RESET}  {note}"
-        )
-
-    # ── summary ──
-    print(f"\n  {_DIM}{'─' * 55}{_RESET}")
-    sched_ok = slack >= 0
-    s_color  = _GREEN if sched_ok else _RED
-    verdict  = "schedulable ✓" if sched_ok else "deadline miss ✗"
-
-    print(f"\n  W_i(D_i={D_i}) = {_BOLD}{_CYAN}{W_final:.1f}{_RESET}  "
-          f"{'≤' if sched_ok else '>'} D_i = {D_i}  "
-          f"→  {s_color}{verdict}{_RESET}")
-    print(f"  Slack  S_i = D_i − R_i = {s_color}{slack:.1f}{_RESET}\n")

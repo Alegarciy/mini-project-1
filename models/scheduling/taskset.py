@@ -32,8 +32,8 @@ class TaskSet:
         Defines the window of repetition between periods
         """
         periods = [t.period for t in self._tasks.values()]
-        print('== PERIODS ==')
-        print(periods)
+        # print('== PERIODS ==')
+        # print(periods)
         return reduce(math.lcm, periods) if periods else 0
 
     # == Methods Generalization for Set ==

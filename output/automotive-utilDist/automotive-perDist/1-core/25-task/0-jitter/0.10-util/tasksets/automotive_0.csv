@@ -16,3 +16,14 @@ TaskID,Jitter,BCET,WCET,Period,Deadline,PE
 14,0,71,710,10000000,10000000,0
 15,0,1,10,10000000,10000000,0
 16,0,1,10,10000000,10000000,0
+
+
+WCRT 
++ We need to evaluate everyth task released at critical isntant, first instant it will be 0 release all of them
++ Jiteer and PE is going to be 0
++ WCET worst case reponse time, we are not using BCET
++ Hyperpriod that makes sense
+
+Ui = [10,50,90]
+
+

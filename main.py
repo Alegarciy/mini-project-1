@@ -26,8 +26,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from models.scheduling.taskset import TaskSet
 from simulation.engine import SimulationEngine
 
-from analysis.workload_analyzer import workload, print_workload_analysis
-
 # TODO: Code the analysis
 # from analysis.dm_analysis import (
 #     perform_dm_analysis,
@@ -211,15 +209,6 @@ def main():
         taskset, "EDF", args.replications, args.seed, args.use_wcet,
         log_dir=args.log_dir, timestamp=timestamp,
     )
-
-    # ── 3. Workload Analysis ──
-    header("WORKLOAD ANALYSIS — EDF")
-    workload(taskset, "EDF")
-    header("WORKLOAD ANALYSIS — DM")
-    workload(taskset)
-    print_workload_analysis(taskset)
-    print()
-
 
 if __name__ == "__main__":
     main()
