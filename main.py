@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 import sys
+from analysis.response_time_analysis import response_time_analysis
 
 import pandas as pd
 
@@ -166,6 +167,57 @@ def run_simulation(
     return aggregated
 
 
+def print_dm_rta(results: list[dict]):
+    header("ANALYTICAL — DM RESPONSE TIME ANALYSIS")
+
+    print(
+        f"\n {BOLD}{WHITE}{'τ_i':<6} {'R_i':<10} {'D_i':<10} "
+        f"{'schedulable':<12} {'steps':<20}{RESET}"
+    )
+    print(f" {DIM}{'─' * 72}{RESET}")
+
+    for r in results:
+        task = r["task"]
+        ok = r["schedulable"]
+        ok_text = f"{GREEN}yes{RESET}" if ok else f"{RED}no{RESET}"
+        color = CYAN if ok else RED
+        steps_text = " → ".join(str(x) for x in r["steps"])
+
+        print(
+            f" {YELLOW}τ_{task.id:<4}{RESET} "
+            f"{color}{r['response_time']:<10}{RESET} "
+            f"{MAGENTA}{task.deadline:<10}{RESET} "
+            f"{ok_text:<12} "
+            f"{DIM}{steps_text}{RESET}"
+        )
+
+    all_ok = all(r["schedulable"] for r in results)
+    if all_ok and len(results) > 0:
+        print(f"\n {GREEN}✓ Task set schedulable under DM according to RTA{RESET}")
+    else:
+        print(f"\n {RED}✗ Task set NOT schedulable under DM according to RTA{RESET}")
+
+def print_edf_analysis(results):
+    header("ANALYTICAL — EDF DEMAND ANALYSIS")
+
+    print(
+        f"\n {BOLD}{WHITE}{'t':<10} {'dbf(t)':<12} {'schedulable':<12}{RESET}"
+    )
+    print(f" {DIM}{'─' * 38}{RESET}")
+
+    for r in results:
+        ok = "yes" if r["schedulable"] else "no"
+        print(
+            f" {YELLOW}{r['t']:<10}{RESET} "
+            f"{CYAN}{r['demand']:<12}{RESET} "
+            f"{ok:<12}"
+        )
+
+    all_ok = all(r["schedulable"] for r in results)
+    print(
+        f"\n {'✓' if all_ok else '✗'} EDF schedulable: {all_ok}"
+    )
+
 # =========================================================================
 #  START PROGRAM
 # =========================================================================
@@ -199,6 +251,40 @@ def main():
     taskset = TaskSet.from_csv(args.taskset)
 
     # ── 2. Simulation ──
+    print(f"  {BOLD}{YELLOW}{taskset}{RESET}")
+    print()
+    label("n                    ", f"{taskset.n}", CYAN)
+    label("U                    ", f"{taskset.utilization:.4f}")
+    label("H                    ", f"{taskset.hyperperiod}", CYAN)
+    label("D_max                ", f"{taskset.D_max}", MAGENTA)
+    label(
+        "Constrained?         ",
+        f"{taskset.has_constrained_deadlines}",
+        RED if taskset.has_constrained_deadlines else GREEN,
+    )
+
+    # ── LL Bound quick check ──
+    n = taskset.n
+    ll_bound = n * (2 ** (1 / n) - 1)
+    label("U_lub (LL bound)     ", f"{ll_bound:.4f}", CYAN)
+
+    if taskset.utilization <= ll_bound:
+        print(f"\n  {GREEN}✓ U ≤ U_lub → guaranteed schedulable by RM/DM{RESET}")
+    elif taskset.utilization <= 1.0:
+        print(f"\n  {YELLOW}? U_lub < U ≤ 1.0 → inconclusive, need RTA/dbf{RESET}")
+    else:
+        print(f"\n  {RED}✗ U > 1.0 → overloaded, no algorithm can schedule{RESET}")
+
+    # TODO: 2. Analytical
+    # dm_analytical, edf_analytical = run_analytical(taskset)
+
+    dm_rta = response_time_analysis(taskset, "DM")
+    print_dm_rta(dm_rta)
+
+    edf_results = response_time_analysis(taskset, "EDF")
+    print_edf_analysis(edf_results)
+
+    # ── 3. Simulation ──
     mode = "WCET" if args.use_wcet else f"random (seed={args.seed})"
 
     run_simulation(
