@@ -300,7 +300,9 @@ def main():
     print("Analysing workload")
     EDF_analysis = workload(taskset, schedule_type="EDF")
     print(EDF_analysis)
-    
+    DM_analysis = workload(taskset, schedule_type="DM")
+    print(DM_analysis)
+
 
 
 if __name__ == "__main__":
