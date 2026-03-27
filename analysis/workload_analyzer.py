@@ -1,3 +1,11 @@
+"""
+response_time_analysis.py
+-------------
+@Author:  Hiya, Ale
+"""
+
+
+
 import copy
 from math import ceil
 from math import floor
@@ -77,28 +85,22 @@ def workload_dm_helper(tasks: list[Task]):
     last_task = tasks[-1]
     previous_tasks = tasks[:-1]
 
-    # multiple time per period until t reaches the H
-    test_points = set()
-    test_points.add(last_task.deadline)
-
-    # Take into a count each task period before big task
-    for p_task in previous_tasks:
-        k = 1
-        while k * p_task.period <= last_task.deadline:
-            test_points.add(k * p_task.period)
-            k += 1
-
-    # Check each point W(i)
-    for t in sorted(test_points):
-        interference = sum(
-            ceil(t / p_task.period) * p_task.wcet for p_task in previous_tasks
+    w = last_task.wcet
+    iteration = 0
+    print(f"  iter {iteration}: w = {w}")
+    while True:
+        w_new = last_task.wcet + sum(
+            ceil(w / p.period) * p.wcet for p in previous_tasks
         )
-        w = last_task.wcet + interference
-        # Compare if the Workload < Time
-        if w <= t:
+        iteration += 1
+        print(f"  iter {iteration}: w = {w_new}")
+        if w_new > last_task.deadline:
+            print(f"  -> exceeded deadline ({last_task.deadline}), NOT schedulable")
+            return -1
+        if w_new == w:
+            print(f"  -> stabilized at w = {w} <= D = {last_task.deadline}, schedulable")
             return w
-
-    return -1
+        w = w_new
 
 
 def workload_dm(taskset: TaskSet):
@@ -130,6 +132,11 @@ def workload_at_deadline_dm(taskset: TaskSet) -> list[int]:
             ceil(t / p.period) * p.wcet for p in previous_tasks
         )
         result.append(last_task.wcet + interference)
+        print(f'==============')
+        print(f'Task{i} Workload => {last_task.wcet}')
+        print(f'Interference before W_{i} => {interference}')
+        print(f'Accumulated Workload W_{i} => {last_task.wcet+interference}')
+        print(f'==============')
 
     return result
 

@@ -108,7 +108,7 @@ class SimulationEngine:
             # In-order processing of critial sections
             if event.event_type == EventType.ARRIVAL:
                 self._handle_arrival(event, duration)
-            if event.event_type == EventType.COMPLETION:
+            elif event.event_type == EventType.COMPLETION:
                 self._handle_completion(event)
             # TODO: Event.DEADLINE can be extended to mark misses in graph
             # We can add it to the job_trace, but is not necessary
@@ -394,6 +394,6 @@ class SimulationEngine:
         if job_id is None:
             return None
         for job in self.all_jobs:
-            if task_id == job.task_id and job_id == job_id:
+            if task_id == job.task_id and job.job_id == job_id:
                 return job
         return None
