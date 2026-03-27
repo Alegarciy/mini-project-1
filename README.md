@@ -13,8 +13,10 @@
 <p align="center">
   <strong>Collaborators:</strong>
   Alejandro Garcia Bejarano &nbsp;·&nbsp;
-  [Collaborator 2] &nbsp;·&nbsp;
-  [Collaborator 3]
+  Marco Cola &nbsp;·&nbsp;
+  Alexandru Jurj &nbsp;·&nbsp;
+  Dumitrita Macarenco &nbsp;·&nbsp;
+  Farhiya Mohamoud Adan Yusuf &nbsp;·&nbsp;
 </p>
 
 <p align="center">
