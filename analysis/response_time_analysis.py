@@ -50,13 +50,13 @@ def response_time_dm_helper(tasks: list[Task]) -> dict:
                 "analysis": "DM-RTA",
             }
 
-        if R_i != R_old and R_old != task_i.wcet:
-            print(f'Not Stable because of jump of interference: {R_i-R_old}')
-            print('Previous Interference:', R_old)
-            print('New Interference Leap:', R_i)
-        elif R_i == R_old and R_old != task_i.wcet:
-            print(f'Stable because of jump was: {R_i-R_old}')
-            print(f'Constant R_i on:{R_i}')
+        # if R_i != R_old and R_old != task_i.wcet:
+        #     print(f'Not Stable because of jump of interference: {R_i-R_old}')
+        #     print('Previous Interference:', R_old)
+        #     print('New Interference Leap:', R_i)
+        # elif R_i == R_old and R_old != task_i.wcet:
+        #     print(f'Stable because of jump was: {R_i-R_old}')
+        #     print(f'Constant R_i on:{R_i}')
 
 
         if R_i == R_old:
