@@ -10,7 +10,7 @@ def workload(taskset: TaskSet, schedule_type="DM"):
     if schedule_type == "DM":
         return workload_dm(taskset)
     else:
-        return workload_edf(taskset)
+        return EDF(taskset)
 
 
 # =============================================================================
@@ -33,7 +33,7 @@ def calculate_dbf(taskset, t: int):
     return total
 
 
-def workload_EDF_helper(taskset):
+def EDF_helper(taskset):
     points = set()
     max_t = sum(task.period for task in taskset.tasks)
 
@@ -53,11 +53,11 @@ def workload_EDF_helper(taskset):
     return sorted(points)
 
 
-def workload_edf(taskset):
+def EDF(taskset):
     print("EDF Demand Bound Function Analysis:")
     is_schedulable = True
 
-    for t in workload_EDF_helper(taskset):
+    for t in EDF_helper(taskset):
         demand = calculate_dbf(taskset, t)
         accepted = demand <= t
         print(f"t = {t} | dbf(t) = {demand} | {'ACCEPTED' if accepted else 'FAILED'}")
