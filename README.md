@@ -29,8 +29,9 @@
 
 - [Section 1.0 — Quick Start](#10--quick-start)
 - [Section 2.0 — Example Runs](#20--example-runs)
-- [Section 3.0 — Building a Custom Dataset](#30--building-a-custom-dataset)
-- [Section 4.0 — Logs & Notebooks](#40--logs--notebooks)
+- [Section 3.0 — Log File Structure](#30--log-file-structure)
+- [Section 4.0 — Building a Custom Dataset](#40--building-a-custom-dataset)
+- [Section 5.0 — Logs & Notebooks](#50--logs--notebooks)
 
 ---
 
@@ -116,8 +117,6 @@ python main.py --taskset <path/to/taskset.csv> [OPTIONS]
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `--taskset` | `str` | *(required)* | Path to the task set CSV file |
-| `--replications` | `int` | `1` | Number of simulation replications |
-| `--seed` | `int` | `42` | Base random seed for execution time sampling |
 | `--use-wcet` | flag | `False` | Always use WCET (deterministic, no jitter) |
 | `--log-dir` | `str` | `None` | Directory to save simulation CSV logs |
 
@@ -150,9 +149,7 @@ The commands below run the full analytical + simulation pipeline for automotive 
 ```bash
 python main.py \
   --taskset taskset_files/automotive/0.10-util/automotive_0.csv \
-  --replications 5 \
-  --seed 42 \
-  --log-dir logs/automotive_0.10
+  --log-dir logs/my_run
 ```
 
 ### Automotive — 50% utilisation
@@ -160,9 +157,7 @@ python main.py \
 ```bash
 python main.py \
   --taskset taskset_files/automotive/0.50-util/automotive_0.csv \
-  --replications 5 \
-  --seed 42 \
-  --log-dir logs/automotive_0.50
+  --log-dir logs/my_run
 ```
 
 ### Automotive — 90% utilisation
@@ -170,16 +165,92 @@ python main.py \
 ```bash
 python main.py \
   --taskset taskset_files/automotive/0.90-util/automotive_0.csv \
-  --replications 5 \
-  --seed 42 \
-  --log-dir logs/automotive_0.90
+  --log-dir logs/my_run
 ```
 
 > **Tip:** add `--use-wcet` to any command for a fully deterministic run (no random execution-time sampling).
 
 ---
 
-## 3.0 — Building a Custom Dataset
+## 3.0 — Log File Structure
+
+Each run with `--log-dir` produces **four CSV files per algorithm** (DM and EDF) inside the target directory:
+
+```
+logs/my_run/
+├── schedule_trace_DM_<timestamp>.csv
+├── preemption_log_DM_<timestamp>.csv
+├── all_jobs_DM_<timestamp>.csv
+├── completed_jobs_DM_<timestamp>.csv
+├── schedule_trace_EDF_<timestamp>.csv
+├── preemption_log_EDF_<timestamp>.csv
+├── all_jobs_EDF_<timestamp>.csv
+└── completed_jobs_EDF_<timestamp>.csv
+```
+
+---
+
+### `all_jobs_DM` / `all_jobs_EDF`
+
+Every job instance released during the simulation, regardless of whether it completed or missed its deadline.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `task_id` | `int` | Task index |
+| `job_id` | `int` | Instance index within the task |
+| `release_time` | `float` | Activation time |
+| `absolute_deadline` | `float` | Hard deadline (`release_time + D_i`) |
+| `execution_time` | `float` | Execution time used for this instance |
+| `remaining_time` | `float` | Remaining execution time at end of simulation |
+| `start_time` | `float \| None` | First time the job ran on CPU (`None` if never started) |
+| `finish_time` | `float \| None` | Completion time (`None` if not completed) |
+| `preemtion_count` | `int` | Number of times the job was preempted |
+| `response_time` | `float \| None` | `finish_time - release_time` (`None` if missed) |
+| `missed_deadline` | `bool` | `True` if the job exceeded its deadline |
+| `is_completed` | `bool` | `True` if the job finished before its deadline |
+
+---
+
+### `completed_jobs_DM` / `completed_jobs_EDF`
+
+Same schema as `all_jobs`, filtered to only rows where `is_completed = True`. Useful for response-time analysis without having to filter manually.
+
+---
+
+### `schedule_trace_DM` / `schedule_trace_EDF`
+
+A slot-by-slot record of which task held the CPU at each point in time.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `start` | `float` | Start of the CPU slot |
+| `end` | `float` | End of the CPU slot |
+| `task_id` | `int` | Task that ran during `[start, end)` |
+
+---
+
+### `preemption_log_DM` / `preemption_log_EDF`
+
+One row per preemption event. Each row contains the timestamp plus a full snapshot of both the preempted job and the job that caused the preemption, using the `preempted_` and `by_` column prefixes respectively.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `time` | `float` | Simulation time at which the preemption occurred |
+| `preempted_task_id` | `int` | Task ID of the preempted job |
+| `preempted_job_id` | `int` | Job ID of the preempted job |
+| `preempted_release_time` | `float` | Release time of the preempted job |
+| `preempted_response_time` | `float \| None` | Response time if already completed, else `None` |
+| `preempted_remaining_time` | `float` | Remaining execution time at preemption |
+| `preempted_missed_deadline` | `bool` | Whether the preempted job eventually missed its deadline |
+| `by_task_id` | `int` | Task ID of the preempting job |
+| `by_job_id` | `int` | Job ID of the preempting job |
+| `by_release_time` | `float` | Release time of the preempting job |
+| `by_remaining_time` | `float` | Remaining execution time of the preempting job |
+| *(+ all other `by_` fields)* | | Same fields as `preempted_*` for the preempting job |
+
+---
+
+## 4.0 — Building a Custom Dataset
 
 ### CSV Format
 
@@ -211,8 +282,6 @@ Save your file anywhere convenient, for example `examples/my_taskset.csv`.
 ```bash
 python main.py \
   --taskset examples/my_taskset.csv \
-  --replications 10 \
-  --seed 0 \
   --log-dir logs/my_run
 ```
 
@@ -226,7 +295,7 @@ and exports files in the same CSV format used here.
 
 ---
 
-## 4.0 — Logs & Notebooks
+## 5.0 — Logs & Notebooks
 
 ### How Logs Are Registered and Stored
 
@@ -243,8 +312,6 @@ logs/my_run/
 ├── all_jobs_EDF_20260327_140000.csv
 └── completed_jobs_EDF_20260327_140000.csv
 ```
-
-With `--replications N > 1` each file gets a `_repK` suffix (e.g. `_rep1`, `_rep2`, …).
 
 #### Job log fields
 
