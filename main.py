@@ -24,6 +24,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from analysis.workload_analyzer import workload
 from models.scheduling.taskset import TaskSet
 from simulation.engine import SimulationEngine
 
@@ -295,6 +296,12 @@ def main():
         taskset, "EDF", args.replications, args.seed, args.use_wcet,
         log_dir=args.log_dir, timestamp=timestamp,
     )
+
+    print("Analysing workload")
+    EDF_analysis = workload(taskset, schedule_type="EDF")
+    print(EDF_analysis)
+    
+
 
 if __name__ == "__main__":
     main()

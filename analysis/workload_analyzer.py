@@ -7,7 +7,7 @@ response_time_analysis.py
 
 
 import copy
-from math import ceil
+from math import ceil, lcm
 from math import floor
 
 from models.scheduling.taskset import TaskSet
@@ -43,7 +43,7 @@ def calculate_dbf(taskset, t: int):
 
 def EDF_helper(taskset):
     points = set()
-    max_t = sum(task.period for task in taskset.tasks)
+    max_t = lcm(*(task.period for task in taskset.tasks))
 
     for task in taskset.tasks:
         k = 0
