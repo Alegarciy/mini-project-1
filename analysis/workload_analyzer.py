@@ -132,11 +132,11 @@ def workload_at_deadline_dm(taskset: TaskSet) -> list[int]:
             ceil(t / p.period) * p.wcet for p in previous_tasks
         )
         result.append(last_task.wcet + interference)
-        print(f'==============')
-        print(f'Task{i} Workload => {last_task.wcet}')
-        print(f'Interference before W_{i} => {interference}')
-        print(f'Accumulated Workload W_{i} => {last_task.wcet+interference}')
-        print(f'==============')
+        # print(f'==============')
+        # print(f'Task{i} Workload => {last_task.wcet}')
+        # print(f'Interference before W_{i} => {interference}')
+        # print(f'Accumulated Workload W_{i} => {last_task.wcet+interference}')
+        # print(f'==============')
 
     return result
 
