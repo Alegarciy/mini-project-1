@@ -2,7 +2,7 @@
 """
 response_time_analysis.py
 -------------
-@Author: Dumitrita 
+@Author: Alejandro Garcia, Dumitrita 
 """
 
 from math import ceil, floor
@@ -12,6 +12,7 @@ from models.scheduling.task import Task
 
 # =========================
 # DM — RESPONSE TIME ANALYSIS
+# @Author: Alejandro Garcia
 # =========================
 
 def response_time_dm_helper(tasks: list[Task]) -> dict:
@@ -88,6 +89,7 @@ def response_time_dm(taskset: TaskSet) -> list[dict]:
 
 # =========================
 # EDF — DEMAND / WORKLOAD ANALYSIS
+# @Author: Dumitrita
 # =========================
 
 def edf_demand_bound_at_t(taskset: TaskSet, t: int) -> dict:
@@ -163,3 +165,52 @@ def response_time_analysis(taskset: TaskSet, schedule_type="DM"):
         raise NotImplementedError(
             f"Analytical response-time/workload analysis not implemented for {schedule_type}"
         )
+
+# =========================
+# EDF — WORST CASE RESPOSNSE TIME
+# @Reference: Spuri's 1996 Algorithmn
+# @Author: Alejandro garcia
+# =========================
+
+# Helper function Interference measurement
+def interference(taskset: TaskSet, task_i: Task, offset, L):
+    total_interference = 0
+
+    for task in taskset:
+        
+        # Interference won't count the task evaluated
+        if task.id == task_i.id:
+            continue
+        
+        deadline_base_count = max(
+            0,
+            floor((offset + task_i.deadline - task.deadline) / task.period) + 1
+        )
+
+        busy_window_capacity = ceil(L/task.period)
+
+        total_interference += min(
+            deadline_base_count,
+            busy_window_capacity
+        ) * task.wcet
+
+    return total_interference
+
+def busy_period(taskset:TaskSet, task_i:Task, offset=0, L=0.):
+    
+    if L == 0:
+        L = sum(task.wcet for task in taskset)
+    
+    new_L = task_i.wcet + interference(taskset, task_i, offset, L)
+    print(f"[busy_period] offset={offset}, L={L}, new_L={new_L}")
+    if new_L == L:
+        return L
+    else:
+        return busy_period(taskset, task_i, offset, new_L)
+
+
+def edf_wcrt_task_analysis(taskset:TaskSet, task_i:Task, offset=0):
+    return busy_period(taskset, task_i, offset) - offset
+
+
+
