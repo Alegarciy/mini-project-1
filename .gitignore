@@ -90,3 +90,6 @@ secrets.json
 *.log
 logs/
 logs_terminal/
+
+# UV
+uv.lock
