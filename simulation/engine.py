@@ -74,14 +74,15 @@ class SimulationEngine:
         @Note: Because jobs are repeated without jitter then is one Hyperperiod
         """
 
-        # TODO: Refactor this logic, if we were to use jitter analysis
+        # TODO: Refactor this logic, if we were to use jitter/offset analysis
         H = self.taskset.hyperperiod
         if duration is None:
-            duration = H
+            duration = self.taskset.simulation_length
 
         print(
             f"== Start of Simulation ==\n"
-            f"Algorithm {self.algorithm} | Hyperperiod={H}"
+            f"Algorithm {self.algorithm} | Hyperperiod={H} "
+            f"| hyperperiods={self.taskset.simulation_hyperperiods} "
             f"| duration={duration} | U={self.taskset.utilization:.4f}"
         )
 

@@ -29,12 +29,44 @@ class TaskSet:
     def hyperperiod(self) -> int:
         """
         H = lcm(T_1,...,T_n)
-        Defines the window of repetition between periods
+        Defines the window of repetition between periods.
+
+        In this project, all tasks are loaded with zero jitter and zero phase,
+        so the release pattern repeats every hyperperiod.
         """
         periods = [t.period for t in self._tasks.values()]
-        # print('== PERIODS ==')
-        # print(periods)
         return reduce(math.lcm, periods) if periods else 0
+
+    @property
+    def simulation_length(self) -> int:
+        """
+        Simulation horizon used by the event-driven engine.
+
+        Rationale:
+        - tasks are periodic and jitterless in this repository
+        - all first releases happen at time 0 (phase = 0)
+        - deadlines are constrained by Task.__post_init__ (D_i <= T_i)
+        - therefore the job-release pattern repeats after one hyperperiod H
+        - every job released in [0, H) also has its deadline within [0, H]
+
+        Hence, simulating one hyperperiod is sufficient for the current model.
+        """
+        return self.hyperperiod
+
+    @property
+    def simulation_hyperperiods(self) -> int:
+        """Number of hyperperiods used by the default simulation horizon."""
+        return 1
+
+    @property
+    def is_jitterless(self) -> bool:
+        """True when all tasks have zero jitter."""
+        return all(t.jitter == 0 for t in self._tasks.values())
+
+    @property
+    def is_synchronous(self) -> bool:
+        """True when all tasks have zero phase."""
+        return all(t.phase == 0 for t in self._tasks.values())
 
     # == Methods Generalization for Set ==
 

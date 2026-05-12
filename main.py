@@ -18,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 import sys
-from analysis.response_time_analysis import response_time_analysis
+from analysis.response_time_analysis import response_time_analysis, edf_wcrt_task_analysis
 
 import pandas as pd
 
@@ -245,8 +245,13 @@ def main():
         default=None,
         help="Directory to store simulation logs (schedule_trace, preemption_log, all_jobs, completed_jobs)",
     )
+    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    parser.add_argument(
+        "--timestamp",
+        default=1
+    )
     args = parser.parse_args()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = args.timestamp
 
     # ── 1. Load Γ ──
     taskset = TaskSet.from_csv(args.taskset)
@@ -258,6 +263,10 @@ def main():
     label("U                    ", f"{taskset.utilization:.4f}")
     label("H                    ", f"{taskset.hyperperiod}", CYAN)
     label("D_max                ", f"{taskset.D_max}", MAGENTA)
+    label("jitterless?          ", f"{taskset.is_jitterless}", CYAN)
+    label("synchronous?         ", f"{taskset.is_synchronous}", CYAN)
+    label("sim. hyperperiods    ", f"{taskset.simulation_hyperperiods}", CYAN)
+    label("sim. length          ", f"{taskset.simulation_length}", GREEN)
     label(
         "Constrained?         ",
         f"{taskset.has_constrained_deadlines}",
@@ -275,18 +284,21 @@ def main():
         print(f"\n  {YELLOW}? U_lub < U ≤ 1.0 → inconclusive, need RTA/dbf{RESET}")
     else:
         print(f"\n  {RED}✗ U > 1.0 → overloaded, no algorithm can schedule{RESET}")
-
-    # TODO: 2. Analytical
-    # dm_analytical, edf_analytical = run_analytical(taskset)
-
+    
+    # ==== ANALYTICAL RESPONSE TIME ANALYSIS PRINTS ====
     dm_rta = response_time_analysis(taskset, "DM")
     print_dm_rta(dm_rta)
 
-    edf_results = response_time_analysis(taskset, "EDF")
-    print_edf_analysis(edf_results)
+    # edf_results = response_time_analysis(taskset, "EDF")
+    # print_edf_analysis(edf_results)
+
+    # ==== ANALYTICAL WORST CASE RESPONSE TIME  PRINTS ====
+    # edf_wcrt_result = edf_wcrt_task_analysis(taskset, taskset.get_task(5))
+    # print(f'EDF WCRT RESULT: {edf_wcrt_result}')
 
     # ── 3. Simulation ──
     mode = "WCET" if args.use_wcet else f"random (seed={args.seed})"
+    label("simulation mode      ", mode, CYAN)
 
     run_simulation(
         taskset, "DM", args.replications, args.seed, args.use_wcet,
